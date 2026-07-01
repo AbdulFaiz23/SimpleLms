@@ -67,17 +67,24 @@ def export_course_report(self, course_id):
             writer = csv.writer(csvfile)
             writer.writerow(['Student Username', 'Student Email', 'Enrollment Date', 'Progress (%)'])
             
+            total_lessons = course.lesson_set.count()
+            
             for enrollment in enrollments:
-                progress_obj = Progress.objects.filter(enrollment=enrollment).first()
-                if progress_obj and course.lessons.count() > 0:
-                    pct = (progress_obj.completed_lessons / course.lessons.count()) * 100
+                completed_lessons = Progress.objects.filter(
+                    student=enrollment.student, 
+                    lesson__course=enrollment.course, 
+                    completed=True
+                ).count()
+                
+                if total_lessons > 0:
+                    pct = (completed_lessons / total_lessons) * 100
                 else:
                     pct = 0.0
                 
                 writer.writerow([
                     enrollment.student.username,
                     enrollment.student.email,
-                    enrollment.date_enrolled.strftime("%Y-%m-%d %H:%M:%S"),
+                    enrollment.enrolled_at.strftime("%Y-%m-%d %H:%M:%S"),
                     f"{pct:.2f}"
                 ])
                 

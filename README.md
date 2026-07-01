@@ -55,6 +55,9 @@ docker-compose exec web python manage.py migrate
 - API Docs (Swagger) ➡️ http://localhost:8000/api/docs
 - **Flower Monitoring** ➡️ http://localhost:5555
 
+## 🌼 Flower Dashboard
+![Flower Dashboard](./Screenshot%202026-03-23%20081030.png)
+
 ---
 
 ## ⚡ Caching Strategy & Rate Limiting (Redis)

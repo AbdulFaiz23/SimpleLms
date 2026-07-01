@@ -9,6 +9,8 @@ from lms.schemas import (
 from lms.auth import JWTAuth, is_instructor, is_admin, check_course_owner
 from django.core.cache import cache
 from lms.mongo import log_activity
+from lms.tasks import export_course_report
+from django.shortcuts import get_object_or_404
 
 router = Router(tags=["Courses"])
 
@@ -220,3 +222,24 @@ def delete_course(request, course_id: int):
     invalidate_course_cache(course_id)
     
     return {"message": f"Course '{title}' deleted successfully"}
+
+
+@router.post("/{course_id}/export-report", auth=JWTAuth())
+def export_report(request, course_id: int):
+    """
+    Triggers an async task to generate a course report.
+    Accessible to admins and instructors (who own the course).
+    """
+    if request.auth.role not in ['admin', 'instructor']:
+        return 403, {"detail": "Admin or Instructor access required"}
+
+    course = get_object_or_404(Course, id=course_id)
+    
+    if request.auth.role == 'instructor' and course.instructor != request.auth:
+        return 403, {"detail": "You don't own this course"}
+
+    # Trigger async task
+    task = export_course_report.delay(course.id)
+    
+    # Return 202 Accepted immediately
+    return 202, {"task_id": task.id, "message": "Report generation started"}

@@ -23,12 +23,11 @@ class RateLimitMiddleware(MiddlewareMixin):
 
         # Increment counter in Redis
         try:
-            requests = cache.get(cache_key)
-            if requests is None:
+            try:
+                requests = cache.incr(cache_key)
+            except ValueError:
                 cache.set(cache_key, 1, timeout=60)
                 requests = 1
-            else:
-                requests = cache.incr(cache_key)
 
             if requests > 60:
                 return JsonResponse({"detail": "Rate limit exceeded, try again later"}, status=429)
