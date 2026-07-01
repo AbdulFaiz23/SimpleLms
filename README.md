@@ -61,6 +61,7 @@ docker-compose exec web python manage.py createsuperuser
 - API Docs (Swagger) ➡️ http://localhost:8000/api/docs
 - Postman Collection ➡️ Import file `postman_collection.json` ke Postman
 - **Flower Monitoring (Progress 4)** ➡️ http://localhost:5555
+- **RabbitMQ Dashboard** ➡️ http://localhost:15672 (User/Pass: `guest` / `guest`)
 
 ## 🌼 Flower Dashboard
 ![Flower Dashboard](./Screenshot%202026-03-23%20081030.png)
