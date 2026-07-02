@@ -63,6 +63,12 @@ docker-compose exec web python manage.py createsuperuser
 - **Flower Monitoring (Progress 4)** ➡️ http://localhost:5555
 - **RabbitMQ Dashboard** ➡️ http://localhost:15672 (User/Pass: `guest` / `guest`)
 
+### 6. Menjalankan Test
+Untuk menjalankan unit test (Testing APIs, Models, Celery Tasks, RBAC, dll):
+```bash
+docker-compose exec web python manage.py test lms.tests
+```
+
 ## 🌼 Flower Dashboard
 ![Flower Dashboard](./Screenshot%202026-03-23%20081030.png)
 
