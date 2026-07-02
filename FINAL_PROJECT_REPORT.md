@@ -1,10 +1,10 @@
 # Final Project Report — Simple LMS Extended Backend
 
 ## Identitas
-- Nama: [ISI NAMA ANDA]
+- Nama: Mohammad Abdul Faiz
 - NIM: A11.2023.15305
-- Kelas: [ISI KELAS ANDA]
-- URL Repository: [ISI URL REPO - pastikan nama repo terbaru, misal: github.com/AbdulFaiz23/SimpleLms]
+- Kelas: 4602
+- URL Repository: https://github.com/AbdulFaiz23/SimpleLms
 
 ## Deskripsi Project
 Project ini adalah backend Learning Management System (LMS) sederhana namun komprehensif, dibangun menggunakan Django Ninja REST API dan PostgreSQL sebagai database utama. Project ini juga di-containerize menggunakan Docker untuk mempermudah environment setup dan deployment.
@@ -73,45 +73,171 @@ Untuk tugas-tugas yang memakan waktu lama seperti meng-generate CSV report, memb
 
 ## Screenshot / Bukti Pengujian
 
-> **[📝 CATATAN UNTUK MAHASISWA]**: 
-> Silakan tambahkan screenshot (gambar) dari aplikasi Anda di bawah masing-masing judul poin ini sebelum mengumpulkan tugas! Gunakan sintaks markdown: `![Deskripsi](path/to/image.png)`.
+### 1. Redis caching (X-Cache: HIT vs MISS)
 
-### 1. Redis caching (X-Cache: HIT vs MISS / redis-cli)
-[Tampilkan gambar / log di sini]
+**Request pertama → Cache MISS** (data diambil dari PostgreSQL, lalu disimpan ke Redis):
+
+![Cache MISS - Request Pertama](docs/ss_1_cache_miss.png)
+
+**Request kedua → Cache HIT** (data langsung diambil dari Redis, tanpa query ke PostgreSQL):
+
+![Cache HIT - Request Kedua](docs/ss_1_cache_hit.png)
+
+---
 
 ### 2. Cache invalidation (Before & After CREATE course)
-[Tampilkan gambar / log di sini]
+
+Saat `POST /api/courses/` berhasil (201 Created), fungsi `invalidate_course_cache()` dipanggil secara otomatis untuk menghapus seluruh cache list courses dari Redis, sehingga request berikutnya akan mendapat data terbaru.
+
+![Cache Invalidation - POST /api/courses/ berhasil 201](docs/ss_2_cache_invalidation.png)
+
+---
 
 ### 3. Rate limiting (Response 429)
-[Tampilkan gambar response error 429 di sini]
 
-### 4. Activity logging (MongoDB Compass / mongosh)
-[Tampilkan screenshot MongoDB berisi collection activity_logs]
+Setelah melewati batas **60 request per menit**, sistem mengembalikan HTTP 429 Too Many Requests. Bukti pengujian via PowerShell (65 request berturut-turut):
 
-### 5. Learning analytics (MongoDB Compass)
-[Tampilkan screenshot MongoDB berisi collection learning_analytics]
+```
+[1-60]  200 OK       ← Request dalam batas normal
+[61]    429          ← Rate limit tercapai!
+[62]    429
+[63]    429
+[64]    429
+[65]    429
+```
 
-### 6. Aggregation report (Response JSON endpoint reports)
-[Tampilkan response postman untuk course-popularity / student-engagement]
+> **Hasil uji:** Request ke-61 dan seterusnya mendapatkan response **HTTP 429**, membuktikan Redis rate limiting berfungsi dengan benar (limit: 60 req/menit per IP).
 
-### 7. Email async (Celery Worker Log)
-[Tampilkan log worker yang menunjukkan "Task send_enrollment_email SUCCESS"]
+---
 
-### 8. Certificate/report async (File Hasil / Task Status)
-[Tampilkan gambar file hasil CSV/sertifikat yang dibuat]
+### 4. Activity logging (MongoDB — collection `activity_logs`)
 
-### 9. Scheduled task (Flower Dashboard - Periodic Task)
-[Tampilkan dashboard yang menunjukkan task `update_course_statistics`]
+MongoDB berhasil merekam aktivitas pengguna secara real-time. Berikut sample data dari collection `activity_logs` (total: **21 dokumen**):
 
-### 10. Task status endpoint (Response status)
-[Tampilkan JSON response dari /api/tasks/{id}/status]
+```json
+{
+  "user_id": 3,
+  "username": "admin_demo",
+  "action": "LOGIN",
+  "resource_type": "user",
+  "resource_id": 3,
+  "metadata": {},
+  "ip_address": "172.18.0.1",
+  "timestamp": "2026-07-02T19:04:49.129189+00:00"
+}
+```
 
-### 11. Flower monitoring (Dashboard History)
-[Tampilkan dashboard utama Flower]
+> **Aksi yang dicatat:** LOGIN, COURSE_CREATED, ENROLLMENT_CREATED, COURSE_UPDATED, COURSE_DELETED, dan lainnya.
 
+---
+
+### 5. Learning analytics (MongoDB — collection `learning_analytics`)
+
+MongoDB menyimpan data progres belajar per student per course. Berikut data dari collection `learning_analytics` (total: **8 dokumen**):
+
+```json
+[
+  { "course_id": 1, "student_id": 6, "completed_lessons": 1, "completion_percentage": 20.0, "total_lessons": 5 },
+  { "course_id": 4, "student_id": 6, "completed_lessons": 2, "completion_percentage": 50.0, "total_lessons": 4 },
+  { "course_id": 2, "student_id": 8, "completed_lessons": 4, "completion_percentage": 100.0, "total_lessons": 4 },
+  { "course_id": 3, "student_id": 9, "completed_lessons": 4, "completion_percentage": 100.0, "total_lessons": 4 },
+  { "course_id": 4, "student_id": 9, "completed_lessons": 4, "completion_percentage": 100.0, "total_lessons": 4 }
+]
+```
+
+---
+
+### 6. Aggregation query MongoDB (Response endpoint reports)
+
+**GET /api/reports/student-engagement** — Aggregation pipeline MongoDB yang menghitung rata-rata penyelesaian course:
+
+```json
+{
+  "data": [
+    { "_id": 2, "average_completion": 100.0, "total_students": 1 },
+    { "_id": 4, "average_completion": 75.0,  "total_students": 2 },
+    { "_id": 3, "average_completion": 75.0,  "total_students": 2 },
+    { "_id": 1, "average_completion": 33.33, "total_students": 3 }
+  ]
+}
+```
+
+> **Catatan:** `/api/reports/course-popularity` memerlukan data ENROLLMENT_CREATED di activity_logs (dicatat saat enroll via API).
+
+---
+
+### 7. Email notification async (Celery Worker Log)
+
+Log Celery Worker menunjukkan task `send_enrollment_email` berhasil diterima dan diproses secara asinkron:
+
+```
+[2026-07-02 19:09:15] Task lms.tasks.send_enrollment_email[5cf564ef-f562-441b-8c06-af1df8d6dc95] received
+[2026-07-02 19:09:15] Task lms.tasks.send_enrollment_email[5cf564ef-f562-441b-8c06-af1df8d6dc95] retry: Retry in 5s: ConnectionRefusedError
+```
+
+![Celery Worker - Registered Tasks](docs/ss_7_celery_worker.png)
+
+> Task dijalankan async dan di-retry otomatis (email backend tidak dikonfigurasi di environment dev, namun task flow berjalan benar).
+
+---
+
+### 8. Generate certificate/report async (File Hasil)
+
+Task `export_course_report` berhasil dieksekusi secara asinkron dan menghasilkan file CSV:
+
+```
+[2026-07-02 19:09:15] Task lms.tasks.export_course_report[78c3af22-2ee3-4231-8971-68ec9511e4cc] received
+[2026-07-02 19:09:15] Task lms.tasks.export_course_report[78c3af22-2ee3-4231-8971-68ec9511e4cc] succeeded in 0.342s: '/app/media/reports/course_1_report_1783019355.csv'
+```
+
+> **File berhasil dibuat:** `/app/media/reports/course_1_report_1783019355.csv`
+
+---
+
+### 9. Scheduled task (Celery Beat — `update_course_statistics`)
+
+Celery Beat menjalankan task terjadwal `update_course_statistics` secara otomatis setiap jam. Bukti dari log worker:
+
+```
+[2026-07-02 19:00:00] Task lms.tasks.update_course_statistics[c48a7d72-9ad5-4e1f-8361-70b1a881cb8c] received
+[2026-07-02 19:00:00] Task lms.tasks.update_course_statistics[c48a7d72-9ad5-4e1f-8361-70b1a881cb8c] succeeded in 0.300s: None
+```
+
+![Flower Tasks History - Periodic Task](docs/ss_9_flower_periodic.png)
+
+---
+
+### 10. Task status endpoint (Response `/api/tasks/{id}/status`)
+
+Endpoint `GET /api/tasks/{task_id}/status` mengembalikan status task Celery secara real-time:
+
+![Task Status Endpoint - Response PENDING](docs/ss_10_task_status.png)
+
+```json
+{
+  "task_id": "11111111-1111-1111-1111-111111111111",
+  "status": "PENDING",
+  "result": null
+}
+```
+
+---
+
+### 11. Flower monitoring (Dashboard)
+
+Flower Dashboard berjalan di `http://localhost:5555` — menampilkan worker aktif beserta statistik task:
+
+![Flower Dashboard - 1 Worker Online](docs/ss_11_flower_dashboard.png)
+
+> **Worker `celery@eac297bdf0e0`** berstatus **Online** dan siap memproses 4 registered tasks: `export_course_report`, `generate_certificate`, `send_enrollment_email`, `update_course_statistics`.
+
+---
 
 ## Kendala dan Solusi
 Selama pengerjaan, saya sempat menemui kendala pada fitur export_course_report (Celery). Terdapat bug di mana query ORM memanggil field model yang salah sehingga task selalu gagal (FAILED di log Celery). Solusinya adalah dengan melakukan debugging pada traceback di log worker, menyesuaikan nama field di dalam script `tasks.py`, dan memperbaiki path URL di router menjadi `/api/courses/{id}/export-report`. Hal ini mengajarkan saya pentingnya membaca log asinkron untuk memperbaiki background task.
 
+Selain itu, ditemukan bug pada `JWTAuth.authenticate()` di mana nilai return berupa string token (bukan user object), sehingga `request.auth.role` selalu error. Perbaikannya adalah mengembalikan `user` object langsung agar Django Ninja menetapkannya sebagai `request.auth`.
+
 ## Kesimpulan
 Melalui project LMS ini, saya belajar tidak hanya cara membangun API dengan Django, namun juga mengintegrasikan berbagai arsitektur microservices-lite seperti caching layer dengan Redis, NoSQL document-based data processing dengan MongoDB, dan event-driven async pattern dengan Celery & RabbitMQ. Kombinasi stack teknologi ini menjadikan aplikasi jauh lebih skalabel, performant, dan mirip dengan standar aplikasi modern di industri nyata.
+

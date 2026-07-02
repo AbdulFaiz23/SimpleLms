@@ -49,8 +49,7 @@ class JWTAuth(HttpBearer):
             raise HttpError(401, "Invalid token type")
         try:
             user = User.objects.get(id=payload.get("user_id"))
-            request.auth = user
-            return token
+            return user  # request.auth will be set to this user object by Django Ninja
         except User.DoesNotExist:
             raise HttpError(401, "User not found")
 
