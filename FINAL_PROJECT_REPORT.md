@@ -77,19 +77,13 @@ Untuk tugas-tugas yang memakan waktu lama seperti meng-generate CSV report, memb
 
 **Request pertama → Cache MISS** (data diambil dari PostgreSQL, lalu disimpan ke Redis):
 
-![Cache MISS - Request Pertama](docs/ss_1_cache_miss.png)
-
 **Request kedua → Cache HIT** (data langsung diambil dari Redis, tanpa query ke PostgreSQL):
-
-![Cache HIT - Request Kedua](docs/ss_1_cache_hit.png)
 
 ---
 
 ### 2. Cache invalidation (Before & After CREATE course)
 
 Saat `POST /api/courses/` berhasil (201 Created), fungsi `invalidate_course_cache()` dipanggil secara otomatis untuk menghapus seluruh cache list courses dari Redis, sehingga request berikutnya akan mendapat data terbaru.
-
-![Cache Invalidation - POST /api/courses/ berhasil 201](docs/ss_2_cache_invalidation.png)
 
 ---
 
@@ -175,8 +169,6 @@ Log Celery Worker menunjukkan task `send_enrollment_email` berhasil diterima dan
 [2026-07-02 19:09:15] Task lms.tasks.send_enrollment_email[5cf564ef-f562-441b-8c06-af1df8d6dc95] retry: Retry in 5s: ConnectionRefusedError
 ```
 
-![Celery Worker - Registered Tasks](docs/ss_7_celery_worker.png)
-
 > Task dijalankan async dan di-retry otomatis (email backend tidak dikonfigurasi di environment dev, namun task flow berjalan benar).
 
 ---
@@ -203,15 +195,11 @@ Celery Beat menjalankan task terjadwal `update_course_statistics` secara otomati
 [2026-07-02 19:00:00] Task lms.tasks.update_course_statistics[c48a7d72-9ad5-4e1f-8361-70b1a881cb8c] succeeded in 0.300s: None
 ```
 
-![Flower Tasks History - Periodic Task](docs/ss_9_flower_periodic.png)
-
 ---
 
 ### 10. Task status endpoint (Response `/api/tasks/{id}/status`)
 
 Endpoint `GET /api/tasks/{task_id}/status` mengembalikan status task Celery secara real-time:
-
-![Task Status Endpoint - Response PENDING](docs/ss_10_task_status.png)
 
 ```json
 {
@@ -226,8 +214,6 @@ Endpoint `GET /api/tasks/{task_id}/status` mengembalikan status task Celery seca
 ### 11. Flower monitoring (Dashboard)
 
 Flower Dashboard berjalan di `http://localhost:5555` — menampilkan worker aktif beserta statistik task:
-
-![Flower Dashboard - 1 Worker Online](docs/ss_11_flower_dashboard.png)
 
 > **Worker `celery@eac297bdf0e0`** berstatus **Online** dan siap memproses 4 registered tasks: `export_course_report`, `generate_certificate`, `send_enrollment_email`, `update_course_statistics`.
 
