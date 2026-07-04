@@ -68,6 +68,7 @@ def list_courses(
     cache_key = f"courses:list:{page}:{page_size}:{category_id or ''}:{search or ''}"
     cached_data = cache.get(cache_key)
     if cached_data:
+        request.META['X_CACHE'] = 'HIT'
         return cached_data
 
     qs = Course.objects.for_listing()
@@ -103,6 +104,7 @@ def list_courses(
         ],
     }
     cache.set(cache_key, response_data, timeout=300) # 5 minutes
+    request.META['X_CACHE'] = 'MISS'
     return response_data
 
 
@@ -112,6 +114,7 @@ def get_course(request, course_id: int):
     cache_key = f"course:detail:{course_id}"
     cached_data = cache.get(cache_key)
     if cached_data:
+        request.META['X_CACHE'] = 'HIT'
         return cached_data
         
     try:
@@ -126,6 +129,7 @@ def get_course(request, course_id: int):
         
     response_data = serialize_detail(course)
     cache.set(cache_key, response_data, timeout=300)
+    request.META['X_CACHE'] = 'MISS'
     return response_data
 
 
@@ -224,7 +228,7 @@ def delete_course(request, course_id: int):
     return {"message": f"Course '{title}' deleted successfully"}
 
 
-@router.post("/{course_id}/export-report", auth=JWTAuth())
+@router.post("/{course_id}/export-report", auth=JWTAuth(), response={202: dict})
 def export_report(request, course_id: int):
     """
     Triggers an async task to generate a course report.

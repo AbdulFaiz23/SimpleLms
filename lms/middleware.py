@@ -39,3 +39,9 @@ class RateLimitMiddleware(MiddlewareMixin):
             pass
         
         return None
+
+    def process_response(self, request, response):
+        x_cache = request.META.get('X_CACHE')
+        if x_cache:
+            response['X-Cache'] = x_cache
+        return response

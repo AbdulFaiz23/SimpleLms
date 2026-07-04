@@ -146,9 +146,13 @@ Password untuk semua akun: **`password123`**
 
 **Request pertama → Cache MISS** (data diambil dari PostgreSQL, lalu disimpan ke Redis):
 
+![Cache Miss](SS/ss_1_cache_miss.png)
+
 > Header respons: `X-Cache: MISS` — artinya data di-fetch dari DB dan disimpan ke Redis untuk request berikutnya.
 
 **Request kedua → Cache HIT** (data langsung diambil dari Redis, tanpa query ke PostgreSQL):
+
+![Cache Hit](SS/ss_1_cache_hit.png)
 
 > Header respons: `X-Cache: HIT` — latency lebih rendah, tidak ada DB query.
 
@@ -158,6 +162,12 @@ Password untuk semua akun: **`password123`**
 
 Saat `POST /api/courses/` berhasil (201 Created), fungsi `invalidate_course_cache()` dipanggil secara otomatis untuk menghapus seluruh cache list courses dari Redis, sehingga request berikutnya akan mendapat data terbaru.
 
+**Sebelum (Cache masih ada):**
+![Cache Sebelum](SS/ss_2_before.png)
+
+**Sesudah (Cache terhapus otomatis):**
+![Cache Sesudah](SS/ss_2_after.png)
+
 > Strategi: `redis-cli KEYS "courses:*"` akan menunjukkan key terhapus setelah operasi Create/Update/Delete berhasil.
 
 ---
@@ -165,6 +175,8 @@ Saat `POST /api/courses/` berhasil (201 Created), fungsi `invalidate_course_cach
 ### 3. Rate Limiting — Response 429
 
 Setelah melewati batas **60 request per menit**, sistem mengembalikan HTTP 429 Too Many Requests. Bukti pengujian via PowerShell (65 request berturut-turut):
+
+![Rate Limiting](SS/ss_3_rate_limit.png)
 
 ```
 [1-60]  200 OK       ← Request dalam batas normal
@@ -182,6 +194,8 @@ Setelah melewati batas **60 request per menit**, sistem mengembalikan HTTP 429 T
 ### 4. Activity Logging — MongoDB collection `activity_logs`
 
 MongoDB berhasil merekam aktivitas pengguna secara real-time. Berikut sample data dari collection `activity_logs` (total: **21 dokumen**):
+
+![MongoDB Activity Log](SS/ss_4_mongo_activity.png)
 
 ```json
 {
@@ -204,6 +218,8 @@ MongoDB berhasil merekam aktivitas pengguna secara real-time. Berikut sample dat
 
 MongoDB menyimpan data progres belajar per student per course. Berikut data dari collection `learning_analytics` (total: **8 dokumen**):
 
+![MongoDB Learning Analytics](SS/ss_5_mongo_analytics.png)
+
 ```json
 [
   { "course_id": 1, "student_id": 6, "completed_lessons": 1, "completion_percentage": 20.0,  "total_lessons": 5 },
@@ -219,6 +235,8 @@ MongoDB menyimpan data progres belajar per student per course. Berikut data dari
 ### 6. Aggregation Query MongoDB — Response Endpoint Reports
 
 **`GET /api/reports/student-engagement`** — Aggregation pipeline MongoDB yang menghitung rata-rata penyelesaian course per student:
+
+![Aggregation Query](SS/ss_6_aggregation.png)
 
 ```json
 {
@@ -239,6 +257,8 @@ MongoDB menyimpan data progres belajar per student per course. Berikut data dari
 
 Log Celery Worker menunjukkan task `send_enrollment_email` berhasil diterima dan diproses secara asinkron:
 
+![Celery Worker](SS/ss_7_celery_worker.png)
+
 ```
 [2026-07-02 19:09:15] Task lms.tasks.send_enrollment_email[5cf564ef-f562-441b-8c06-af1df8d6dc95] received
 [2026-07-02 19:09:15] Task lms.tasks.send_enrollment_email[5cf564ef-f562-441b-8c06-af1df8d6dc95] retry: Retry in 5s: ConnectionRefusedError
@@ -251,6 +271,8 @@ Log Celery Worker menunjukkan task `send_enrollment_email` berhasil diterima dan
 ### 8. Generate Certificate/Report Async — File Hasil CSV
 
 Task `export_course_report` berhasil dieksekusi secara asinkron dan menghasilkan file CSV:
+
+![File CSV](SS/ss_8_export_report.png)
 
 ```
 [2026-07-02 19:09:15] Task lms.tasks.export_course_report[78c3af22-2ee3-4231-8971-68ec9511e4cc] received
@@ -265,6 +287,8 @@ Task `export_course_report` berhasil dieksekusi secara asinkron dan menghasilkan
 
 Celery Beat menjalankan task terjadwal `update_course_statistics` secara otomatis setiap jam. Bukti dari log worker:
 
+![Celery Beat](SS/ss_9_flower_periodic.png)
+
 ```
 [2026-07-02 19:00:00] Task lms.tasks.update_course_statistics[c48a7d72-9ad5-4e1f-8361-70b1a881cb8c] received
 [2026-07-02 19:00:00] Task lms.tasks.update_course_statistics[c48a7d72-9ad5-4e1f-8361-70b1a881cb8c] succeeded in 0.300s: None
@@ -275,6 +299,8 @@ Celery Beat menjalankan task terjadwal `update_course_statistics` secara otomati
 ### 10. Task Status Endpoint — `GET /api/tasks/{task_id}/status`
 
 Endpoint `GET /api/tasks/{task_id}/status` mengembalikan status task Celery secara real-time:
+
+![Task Status](SS/ss_10_task_status.png)
 
 ```json
 {
@@ -291,6 +317,8 @@ Endpoint `GET /api/tasks/{task_id}/status` mengembalikan status task Celery seca
 ### 11. Flower Monitoring — Dashboard
 
 Flower Dashboard berjalan di `http://localhost:5555` — menampilkan worker aktif beserta statistik task secara real-time.
+
+![Flower Dashboard](SS/ss_11_flower_dashboard.png)
 
 > **Worker `celery@eac297bdf0e0`** berstatus **Online** dan siap memproses 4 registered tasks:
 > - `export_course_report`
