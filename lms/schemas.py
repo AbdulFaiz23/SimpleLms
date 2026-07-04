@@ -129,3 +129,12 @@ class EnrolledCourseSchema(Schema):
 
 class MessageSchema(Schema):
     message: str
+
+class LessonCreateSchema(Schema):
+    title: str
+    order: int
+
+class LessonOutSchema(Schema):
+    id: int
+    title: str
+    order: int

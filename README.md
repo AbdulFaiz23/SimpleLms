@@ -55,6 +55,23 @@ docker-compose exec web python manage.py migrate
 docker-compose exec web python manage.py createsuperuser
 ```
 
+### 4.5. Seed Demo Data
+Untuk mengisi database dengan data contoh (course, lesson, enrollment, progress) dan akun demo per role:
+```bash
+docker-compose exec web python manage.py seed_demo_data
+```
+
+### Akun Demo
+Semua akun demo menggunakan password yang sama untuk memudahkan testing:
+
+| Role | Username | Password |
+|---|---|---|
+| Admin | `admin_demo` | `password123` |
+| Instructor | `instructor_1`, `instructor_2` | `password123` |
+| Student | `student_1`, `student_2`, `student_3`, `student_4` | `password123` |
+
+Gunakan akun ini untuk login lewat `POST /api/auth/login` dan mendapatkan token sesuai role masing-masing.
+
 ### 5. Akses Project
 - Django App ➡️ http://localhost:8000
 - Django Admin ➡️ http://localhost:8000/admin
@@ -175,6 +192,8 @@ sequenceDiagram
 | POST | `/api/courses` | Instructor | Buat course baru |
 | PATCH | `/api/courses/{id}` | Owner/Admin | Update course |
 | DELETE | `/api/courses/{id}` | Admin | Hapus course |
+| POST | `/api/courses/{id}/lessons` | Owner/Admin | Tambah lesson baru ke course |
+| GET | `/api/courses/{id}/lessons` | Public | List lesson di course |
 
 ### Enrollments
 | Method | Endpoint | Akses | Deskripsi |

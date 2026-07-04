@@ -1,10 +1,11 @@
 from ninja import Router, Query
 from ninja.errors import HttpError
 from typing import Optional
-from lms.models import Course, Category, User
+from lms.models import Course, Category, User, Lesson
 from lms.schemas import (
     CourseCreateSchema, CourseUpdateSchema,
-    CourseDetailSchema, PaginatedCoursesSchema, MessageSchema
+    CourseDetailSchema, PaginatedCoursesSchema, MessageSchema,
+    LessonCreateSchema, LessonOutSchema
 )
 from lms.auth import JWTAuth, is_instructor, is_admin, check_course_owner
 from django.core.cache import cache
@@ -247,3 +248,20 @@ def export_report(request, course_id: int):
     
     # Return 202 Accepted immediately
     return 202, {"task_id": task.id, "message": "Report generation started"}
+
+
+from typing import List
+
+@router.post("/{course_id}/lessons", auth=JWTAuth(), response=LessonOutSchema)
+def create_lesson(request, course_id: int, payload: LessonCreateSchema):
+    course = get_object_or_404(Course, id=course_id)
+    check_course_owner(request, course)
+    lesson = Lesson.objects.create(course=course, **payload.dict())
+    invalidate_course_cache(course_id)
+    log_activity(request.auth, "LESSON_CREATED", "lesson", lesson.id, {"course_id": course_id, "title": lesson.title}, request)
+    return lesson
+
+@router.get("/{course_id}/lessons", response=List[LessonOutSchema])
+def list_lessons(request, course_id: int):
+    course = get_object_or_404(Course, id=course_id)
+    return list(course.lesson_set.all().order_by("order"))

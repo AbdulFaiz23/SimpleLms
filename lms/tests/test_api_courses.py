@@ -75,3 +75,28 @@ class CoursesAPITests(TestCase):
         self.assertEqual(response2.status_code, 200)
         queries2 = len(ctx2.captured_queries)
         self.assertEqual(queries2, 0)  # No DB queries should be made if cache is hit
+
+
+    def test_create_lesson_owner(self):
+        """Test create lesson oleh owner berhasil"""
+        data = {"title": "New Lesson", "order": 1}
+        response = self.client.post(f"/api/courses/{self.course.id}/lessons", json.dumps(data), content_type="application/json", HTTP_AUTHORIZATION=f"Bearer {self.instructor_token}")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["title"], "New Lesson")
+        self.assertEqual(response.json()["order"], 1)
+
+    def test_create_lesson_non_owner(self):
+        """Test create lesson oleh non-owner ditolak"""
+        data = {"title": "New Lesson", "order": 1}
+        response = self.client.post(f"/api/courses/{self.course.id}/lessons", json.dumps(data), content_type="application/json", HTTP_AUTHORIZATION=f"Bearer {self.student_token}")
+        self.assertEqual(response.status_code, 403)
+
+    def test_list_lessons(self):
+        """Test GET /api/courses/{id}/lessons"""
+        from lms.models import Lesson
+        Lesson.objects.create(course=self.course, title="Lesson 1", order=1)
+        Lesson.objects.create(course=self.course, title="Lesson 2", order=2)
+        response = self.client.get(f"/api/courses/{self.course.id}/lessons")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(len(response.json()), 2)
+        self.assertEqual(response.json()[0]["title"], "Lesson 1")
