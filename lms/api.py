@@ -12,8 +12,8 @@ api = NinjaAPI(
     docs_url="/docs",
 )
 
-api.add_router("/auth/", auth_router, tags=["Authentication"])
-api.add_router("/courses/", courses_router, tags=["Courses"])
-api.add_router("/enrollments/", enrollments_router, tags=["Enrollments"])
-api.add_router("/reports/", reports_router, tags=["Reports"])
-api.add_router("/tasks/", tasks_router, tags=["Tasks"])
+api.add_router("/auth", auth_router, tags=["Authentication"])
+api.add_router("/courses", courses_router, tags=["Courses"])
+api.add_router("/enrollments", enrollments_router, tags=["Enrollments"])
+api.add_router("/reports", reports_router, tags=["Reports"])
+api.add_router("/tasks", tasks_router, tags=["Tasks"])

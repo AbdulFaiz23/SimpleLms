@@ -12,10 +12,10 @@ class PermissionsTests(TestCase):
         self.student = User.objects.create_user(username="student", password="pw", role="student")
         
         # Get tokens
-        self.admin_token = self.client.post("/api/auth/login", json.dumps({"username": "admin", "password": "pw"}), content_type="application/json").json()["token"]
-        self.instructor1_token = self.client.post("/api/auth/login", json.dumps({"username": "instructor1", "password": "pw"}), content_type="application/json").json()["token"]
-        self.instructor2_token = self.client.post("/api/auth/login", json.dumps({"username": "instructor2", "password": "pw"}), content_type="application/json").json()["token"]
-        self.student_token = self.client.post("/api/auth/login", json.dumps({"username": "student", "password": "pw"}), content_type="application/json").json()["token"]
+        self.admin_token = self.client.post("/api/auth/login", json.dumps({"username": "admin", "password": "pw"}), content_type="application/json").json()["access_token"]
+        self.instructor1_token = self.client.post("/api/auth/login", json.dumps({"username": "instructor1", "password": "pw"}), content_type="application/json").json()["access_token"]
+        self.instructor2_token = self.client.post("/api/auth/login", json.dumps({"username": "instructor2", "password": "pw"}), content_type="application/json").json()["access_token"]
+        self.student_token = self.client.post("/api/auth/login", json.dumps({"username": "student", "password": "pw"}), content_type="application/json").json()["access_token"]
         
         self.category = Category.objects.create(name="Programming")
         self.course1 = Course.objects.create(title="Course 1", instructor=self.instructor1, category=self.category)
@@ -43,7 +43,7 @@ class PermissionsTests(TestCase):
 
     def test_student_rejected_from_instructor_admin_endpoints(self):
         """Test student ditolak dari endpoint instructor/admin-only"""
-        data = {"title": "Student Try"}
+        data = {"title": "Student Try", "category_id": self.category.id}
         # Create course (instructor)
         response1 = self.client.post("/api/courses", json.dumps(data), content_type="application/json", HTTP_AUTHORIZATION=f"Bearer {self.student_token}")
         self.assertEqual(response1.status_code, 403)

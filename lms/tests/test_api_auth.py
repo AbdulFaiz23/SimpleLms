@@ -19,7 +19,7 @@ class AuthAPITests(TestCase):
         }
         response = self.client.post(self.register_url, json.dumps(data), content_type="application/json")
         self.assertEqual(response.status_code, 201)
-        self.assertIn("token", response.json())
+        self.assertIn("message", response.json())
 
     def test_login_success(self):
         """Test login sukses -> JWT valid"""
@@ -29,7 +29,7 @@ class AuthAPITests(TestCase):
         }
         response = self.client.post(self.login_url, json.dumps(data), content_type="application/json")
         self.assertEqual(response.status_code, 200)
-        self.assertIn("token", response.json())
+        self.assertIn("access_token", response.json())
 
     def test_login_failed(self):
         """Test login gagal (password salah) -> 401"""

@@ -5,10 +5,12 @@ services:
     image: postgres:15
     container_name: postgres_db
     restart: always
+    env_file:
+      - .env
     environment:
-      POSTGRES_DB: simple_lms
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
@@ -66,16 +68,18 @@ services:
       - redis
       - mongodb
       - rabbitmq
+    env_file:
+      - .env
     environment:
-      DB_NAME: simple_lms
-      DB_USER: postgres
-      DB_PASSWORD: password123
-      DB_HOST: db
-      DB_PORT: 5432
-      REDIS_URL: redis://redis:6379/1
-      MONGO_URI: mongodb://mongodb:27017/
-      MONGO_DB_NAME: lms_logs
-      CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      REDIS_URL: ${REDIS_URL}
+      MONGO_URI: ${MONGO_URI}
+      MONGO_DB_NAME: ${MONGO_DB_NAME}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
 
   celery-worker:
     build: .
@@ -88,16 +92,18 @@ services:
       - redis
       - mongodb
       - rabbitmq
+    env_file:
+      - .env
     environment:
-      DB_NAME: simple_lms
-      DB_USER: postgres
-      DB_PASSWORD: password123
-      DB_HOST: db
-      DB_PORT: 5432
-      REDIS_URL: redis://redis:6379/1
-      MONGO_URI: mongodb://mongodb:27017/
-      MONGO_DB_NAME: lms_logs
-      CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      REDIS_URL: ${REDIS_URL}
+      MONGO_URI: ${MONGO_URI}
+      MONGO_DB_NAME: ${MONGO_DB_NAME}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
 
   celery-beat:
     build: .
@@ -110,16 +116,18 @@ services:
       - redis
       - mongodb
       - rabbitmq
+    env_file:
+      - .env
     environment:
-      DB_NAME: simple_lms
-      DB_USER: postgres
-      DB_PASSWORD: password123
-      DB_HOST: db
-      DB_PORT: 5432
-      REDIS_URL: redis://redis:6379/1
-      MONGO_URI: mongodb://mongodb:27017/
-      MONGO_DB_NAME: lms_logs
-      CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      REDIS_URL: ${REDIS_URL}
+      MONGO_URI: ${MONGO_URI}
+      MONGO_DB_NAME: ${MONGO_DB_NAME}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
 
   flower:
     build: .
@@ -134,16 +142,18 @@ services:
       - redis
       - mongodb
       - rabbitmq
+    env_file:
+      - .env
     environment:
-      DB_NAME: simple_lms
-      DB_USER: postgres
-      DB_PASSWORD: password123
-      DB_HOST: db
-      DB_PORT: 5432
-      REDIS_URL: redis://redis:6379/1
-      MONGO_URI: mongodb://mongodb:27017/
-      MONGO_DB_NAME: lms_logs
-      CELERY_BROKER_URL: amqp://guest:guest@rabbitmq:5672//
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: ${DB_HOST}
+      DB_PORT: ${DB_PORT}
+      REDIS_URL: ${REDIS_URL}
+      MONGO_URI: ${MONGO_URI}
+      MONGO_DB_NAME: ${MONGO_DB_NAME}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
 
 volumes:
   postgres_data:

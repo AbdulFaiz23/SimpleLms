@@ -14,10 +14,10 @@ class CoursesAPITests(TestCase):
         
         # Get tokens
         resp = self.client.post("/api/auth/login", json.dumps({"username": "instructor", "password": "pw"}), content_type="application/json")
-        self.instructor_token = resp.json()["token"]
+        self.instructor_token = resp.json()["access_token"]
         
         resp = self.client.post("/api/auth/login", json.dumps({"username": "student", "password": "pw"}), content_type="application/json")
-        self.student_token = resp.json()["token"]
+        self.student_token = resp.json()["access_token"]
         
         self.category = Category.objects.create(name="Programming")
         self.course = Course.objects.create(title="Python 101", instructor=self.instructor, category=self.category)
